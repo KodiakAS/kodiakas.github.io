@@ -251,6 +251,107 @@
       col-xs-12 postlist-container">
       
 <div class="post-preview">
+    <a href="/2022/10/22/wsl2-no-win-path/">
+        <h2 class="post-title">
+            WSL 不加载 windows PATH 以提高自动补全性能
+        </h2>
+        
+        <h3 class="post-subtitle">
+            
+        </h3>
+        
+        <div class="post-content-preview">
+            
+                wsl加载win环境变量会导致zsh的自动补全延迟大幅提高
+
+编辑/etc/wsl.conf
+
+1
+2
+3
+[interop]
+enabled=true
+appendWindowsPath=false
+
+
+重启wsl生效
+
+在bashrc或zshrc手动添加必要环境变量
+
+1
+2
+3
+4
+5
+# vscode
+export PATH=/mnt/c/Users/KodiakAS/AppData...
+            
+        </div>
+    </a>
+    <p class="post-meta">
+        Posted by KodiakAS on October 22, 2022
+    </p>
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="/2022/10/22/starrocks-vec-engine-basic/">
+        <h2 class="post-title">
+            Starrocks 向量化执行引擎执行流程简述
+        </h2>
+        
+        <h3 class="post-subtitle">
+            
+        </h3>
+        
+        <div class="post-content-preview">
+            
+                starrocks的vectorized执行引擎采用的是火山模型 + batch的模式，即自顶向下地调用算子树每个节点的get_next方法，每次获取一批处理好的数据
+
+此种模式也被称为向量化模型（Vectorized / Batch Model），相对于传统按行处理的火山模型，优势在于大幅减少函数调用次数、更便于使用SIMD指令优化以及对cache更友好，也是目前OLAP引擎使用较多的一种...
+            
+        </div>
+    </a>
+    <p class="post-meta">
+        Posted by KodiakAS on October 22, 2022
+    </p>
+</div>
+<hr>
+
+<div class="post-preview">
+    <a href="/2022/10/22/setup-zsh/">
+        <h2 class="post-title">
+            zsh 配置及美化
+        </h2>
+        
+        <h3 class="post-subtitle">
+            
+        </h3>
+        
+        <div class="post-content-preview">
+            
+                安装zsh和管理工具Oh-My-Zsh
+
+1
+2
+apt install zsh
+sh -c "$(curl -fsSL https:/raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+
+
+安装主题
+
+1
+git clone --depth=1 https://github.com/romka...
+            
+        </div>
+    </a>
+    <p class="post-meta">
+        Posted by KodiakAS on October 22, 2022
+    </p>
+</div>
+<hr>
+
+<div class="post-preview">
     <a href="/2022/10/22/rust-basic/">
         <h2 class="post-title">
             Rust 语言入门
@@ -310,6 +411,11 @@ curl https://sh.rustup.rs -sSf | sh
         
         
         
+        
+                <a data-sort="0003" 
+                    href="/archive/?tag=%E6%95%B0%E6%8D%AE%E5%BA%93"
+                    title="数据库"
+                    rel="2">数据库</a>
     </div>
 </section>
 

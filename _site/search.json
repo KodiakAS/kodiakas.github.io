@@ -1,10 +1,34 @@
 [
   
     {
+      "title"    : "WSL 不加载 windows PATH 以提高自动补全性能",
+      "subtitle" : "",
+      "tags"     : "WSL",
+      "url"      : "/2022/10/22/wsl2-no-win-path/",
+      "date"     : "2022-10-22 00:00:00 +0800"
+    } ,
+  
+    {
+      "title"    : "Starrocks 向量化执行引擎执行流程简述",
+      "subtitle" : "",
+      "tags"     : "数据库",
+      "url"      : "/2022/10/22/starrocks-vec-engine-basic/",
+      "date"     : "2022-10-22 00:00:00 +0800"
+    } ,
+  
+    {
       "title"    : "Starrocks TOPN",
       "subtitle" : "starrocks topn 排序算法解析",
       "tags"     : "算法, 数据库, c++",
       "url"      : "/2022/10/22/starrocks-topn/",
+      "date"     : "2022-10-22 00:00:00 +0800"
+    } ,
+  
+    {
+      "title"    : "zsh 配置及美化",
+      "subtitle" : "",
+      "tags"     : "linux",
+      "url"      : "/2022/10/22/setup-zsh/",
       "date"     : "2022-10-22 00:00:00 +0800"
     } ,
   

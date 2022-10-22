@@ -1,9 +1,9 @@
 ---
 layout: post
 title: "Rust 语言入门"
-# subtitle: "starrocks topn 排序算法解析"
+# subtitle: ""
 author: "KodiakAS"
-header-img: "img/database-bg.png"
+header-img: "img/post-bg-infinity.jpg"
 header-mask: 0.3
 tags:
   - rust

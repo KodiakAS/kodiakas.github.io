@@ -12,17 +12,10 @@
 
     <!-- Open Graph -->
     <meta property="og:title"
-        content="Starrocks TOPN - Project Gestalt | KodiakAS's Blog">
+        content="WSL 不加载 windows PATH 以提高自动补全性能 - Project Gestalt | KodiakAS's Blog">
     
     <meta property="og:type" content="article">
-    <meta property="og:description" content="相关代码位置
-1
-2
-// Sort Chunks in memory with specified order by rules.
-class ChunksSorterTopn : public ChunksSorter
-
-chunks_sorter_topn.h
-chunks_sorter_topn.cpp
+    <meta property="og:description" content="wsl加载win环境变量会导致zsh的自动补全延迟大幅提高
 
 ">
     
@@ -32,18 +25,14 @@ chunks_sorter_topn.cpp
     <meta property="article:author" content="KodiakAS">
     
     
-    <meta property="article:tag" content="算法">
-    
-    <meta property="article:tag" content="数据库">
-    
-    <meta property="article:tag" content="c++">
+    <meta property="article:tag" content="WSL">
     
     
     <meta property="og:image" content="http://localhost:4000/img/avatar.jpg">
-    <meta property="og:url" content="http://localhost:4000/2022/10/22/starrocks-topn/">
+    <meta property="og:url" content="http://localhost:4000/2022/10/22/wsl2-no-win-path/">
     <meta property="og:site_name" content="Project Gestalt | KodiakAS's Blog">
 
-    <title>Starrocks TOPN - Project Gestalt | KodiakAS's Blog</title>
+    <title>WSL 不加载 windows PATH 以提高自动补全性能 - Project Gestalt | KodiakAS's Blog</title>
 
     <!-- Web App Manifest -->
     <link rel="manifest" href="/pwa/manifest.json">
@@ -52,7 +41,7 @@ chunks_sorter_topn.cpp
     <link rel="shortcut icon" href="/img/favicon.ico">
 
     <!-- Canonical URL -->
-    <link rel="canonical" href="http://localhost:4000/2022/10/22/starrocks-topn/">
+    <link rel="canonical" href="http://localhost:4000/2022/10/22/wsl2-no-win-path/">
 
     <!-- Bootstrap Core CSS -->
     <link rel="stylesheet" href=" /css/bootstrap.min.css">
@@ -254,16 +243,12 @@ chunks_sorter_topn.cpp
                 <div class="post-heading">
                     <div class="tags">
                         
-                        <a class="tag" href="/archive/?tag=%E7%AE%97%E6%B3%95" title="算法">算法</a>
-                        
-                        <a class="tag" href="/archive/?tag=%E6%95%B0%E6%8D%AE%E5%BA%93" title="数据库">数据库</a>
-                        
-                        <a class="tag" href="/archive/?tag=c%2B%2B" title="c++">c++</a>
+                        <a class="tag" href="/archive/?tag=WSL" title="WSL">WSL</a>
                         
                     </div>
-                    <h1>Starrocks TOPN</h1>
+                    <h1>WSL 不加载 windows PATH 以提高自动补全性能</h1>
                     
-                    <h2 class="subheading">starrocks topn 排序算法解析</h2>
+                    <h2 class="subheading"></h2>
                     <span class="meta">Posted by KodiakAS on October 22, 2022</span>
                 </div>
             </div>
@@ -291,242 +276,45 @@ chunks_sorter_topn.cpp
                 <!-- Multi-Lingual -->
                 
 
-				<h2 id="相关代码位置">相关代码位置</h2>
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+				<p>wsl加载win环境变量会导致zsh的自动补全延迟大幅提高</p>
+
+<p>编辑<code class="language-plaintext highlighter-rouge">/etc/wsl.conf</code></p>
+
+<div class="language-ini highlighter-rouge"><div class="highlight"><pre class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
 2
-</pre></td><td class="rouge-code"><pre>// Sort Chunks in memory with specified order by rules.
-class ChunksSorterTopn : public ChunksSorter
+3
+</pre></td><td class="rouge-code"><pre><span class="nn">[interop]</span>
+<span class="py">enabled</span><span class="p">=</span><span class="s">true</span>
+<span class="py">appendWindowsPath</span><span class="p">=</span><span class="s">false</span>
 </pre></td></tr></tbody></table></code></pre></div></div>
-<p>chunks_sorter_topn.h
-chunks_sorter_topn.cpp</p>
 
-<p>Status ChunksSorterTopn::update(RuntimeState* state, const ChunkPtr&amp; chunk)
-Status ChunksSorterTopn::_sort_chunks(RuntimeState* state)</p>
+<p>重启wsl生效</p>
 
-<h2 id="关键思路解析">关键思路解析</h2>
+<p>在bashrc或zshrc手动添加必要环境变量</p>
 
-<h3 id="1-向buffer添加数据并启动排序">1. 向buffer添加数据并启动排序</h3>
-<div class="language-c++ highlighter-rouge"><div class="highlight"><pre class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
 2
 3
 4
 5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-</pre></td><td class="rouge-code"><pre><span class="c1">// 将chunk添加到排序buffer中，如果buffer中chunk数量超过limit（也就是topn，说明不需要那么多数据）</span>
-<span class="c1">// 或者超过buffer大小（内存占用过多），就要进行一次排序，淘汰掉一部分数据</span>
-<span class="n">Status</span> <span class="n">ChunksSorterTopn</span><span class="o">::</span><span class="n">update</span><span class="p">(</span><span class="n">RuntimeState</span><span class="o">*</span> <span class="n">state</span><span class="p">,</span> <span class="k">const</span> <span class="n">ChunkPtr</span><span class="o">&amp;</span> <span class="n">chunk</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">auto</span><span class="o">&amp;</span> <span class="n">raw_chunks</span> <span class="o">=</span> <span class="n">_raw_chunks</span><span class="p">.</span><span class="n">chunks</span><span class="p">;</span>
-    <span class="kt">size_t</span> <span class="n">chunk_number</span> <span class="o">=</span> <span class="n">raw_chunks</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">chunk_number</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-        <span class="n">raw_chunks</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">chunk</span><span class="p">);</span>
-        <span class="n">chunk_number</span><span class="o">++</span><span class="p">;</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">raw_chunks</span><span class="p">[</span><span class="n">chunk_number</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">num_rows</span><span class="p">()</span> <span class="o">+</span> <span class="n">chunk</span><span class="o">-&gt;</span><span class="n">num_rows</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">_state</span><span class="o">-&gt;</span><span class="n">chunk_size</span><span class="p">())</span> <span class="p">{</span>
-        <span class="n">raw_chunks</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">chunk</span><span class="p">);</span>
-        <span class="n">chunk_number</span><span class="o">++</span><span class="p">;</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-        <span class="c1">// Old planner will not remove duplicated sort column.</span>
-        <span class="c1">// columns in chunk may have same column ptr</span>
-        <span class="c1">// append_safe will check size of all columns in dest chunk</span>
-        <span class="c1">// to ensure same column will not apppend repeatedly.</span>
-        <span class="n">raw_chunks</span><span class="p">[</span><span class="n">chunk_number</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">append_safe</span><span class="p">(</span><span class="o">*</span><span class="n">chunk</span><span class="p">);</span>
-    <span class="p">}</span>
-    <span class="n">_raw_chunks</span><span class="p">.</span><span class="n">size_of_rows</span> <span class="o">+=</span> <span class="n">chunk</span><span class="o">-&gt;</span><span class="n">num_rows</span><span class="p">();</span>
+</pre></td><td class="rouge-code"><pre><span class="c"># vscode</span>
+<span class="nb">export </span><span class="nv">PATH</span><span class="o">=</span>/mnt/c/Users/KodiakAS/AppData/Local/Programs/Microsoft<span class="se">\ </span>VS<span class="se">\ </span>Code/bin:/usr/lib/wsl/lib:<span class="nv">$PATH</span>
 
-    <span class="c1">// when number of Chunks exceeds _limit or _size_of_chunk_batch, run sort and then part of</span>
-    <span class="c1">// cached chunks can be dropped, so it can reduce the memory usage.</span>
-    <span class="c1">// TopN caches _limit or _size_of_chunk_batch primitive chunks,</span>
-    <span class="c1">// performs sorting once, and discards extra rows</span>
-
-    <span class="k">if</span> <span class="p">(</span><span class="n">_limit</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">chunk_number</span> <span class="o">&gt;=</span> <span class="n">_limit</span> <span class="o">||</span> <span class="n">chunk_number</span> <span class="o">&gt;=</span> <span class="n">_max_buffered_chunks</span><span class="p">))</span> <span class="p">{</span>
-        <span class="c1">// 进入排序逻辑</span>
-        <span class="n">RETURN_IF_ERROR</span><span class="p">(</span><span class="n">_sort_chunks</span><span class="p">(</span><span class="n">state</span><span class="p">));</span>
-    <span class="p">}</span>
-
-    <span class="k">return</span> <span class="n">Status</span><span class="o">::</span><span class="n">OK</span><span class="p">();</span>
-<span class="p">}</span>
+<span class="c"># 用于vscode插件识别wsl，如不添加，`su -`重新加载环境变量后vscode插件无法正常工作</span>
+<span class="nb">export </span><span class="nv">WSL_DISTRO_NAME</span><span class="o">=</span>Ubuntu-20.04
 </pre></td></tr></tbody></table></code></pre></div></div>
-
-<h3 id="2-排序">2. 排序</h3>
-<div class="language-c++ highlighter-rouge"><div class="highlight"><pre class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-35
-36
-37
-38
-39
-40
-41
-42
-43
-44
-45
-</pre></td><td class="rouge-code"><pre><span class="n">Status</span> <span class="n">ChunksSorterTopn</span><span class="o">::</span><span class="n">_sort_chunks</span><span class="p">(</span><span class="n">RuntimeState</span><span class="o">*</span> <span class="n">state</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">const</span> <span class="kt">size_t</span> <span class="n">chunk_size</span> <span class="o">=</span> <span class="n">_raw_chunks</span><span class="p">.</span><span class="n">size_of_rows</span><span class="p">;</span>
-
-    <span class="c1">// chunks for this batch.</span>
-    <span class="c1">// 每次排序一批数据，分批是按照上一步介绍的规则分的</span>
-    <span class="n">DataSegments</span> <span class="n">segments</span><span class="p">;</span>
-
-    <span class="c1">// permutations for this batch:</span>
-    <span class="c1">// if _init_merged_segment == false, means this is first batch:</span>
-    <span class="c1">//     permutations.first is empty, and permutations.second is contains this batch.</span>
-    <span class="c1">// else if _init_merged_segment == true, means this is not first batch, _merged_segment[low_value, high_value] is not empty:</span>
-    <span class="c1">//     permutations.first &lt; low_value and low_value &lt;= permutations.second &lt; high_value(in the case of asc).</span>
-    <span class="c1">// 记录排序结果的结构，first和second对应BEFORE和IN，都是vector，里面的元素是PermutationItem，</span>
-    <span class="c1">// 记录着一行数据在哪个chunk的哪个行号</span>
-    <span class="c1">// 如果是第一轮排序，也就是还没有排好的数据，fisrt是空，second就是本次排序的结果</span>
-    <span class="c1">// 如果不是第一轮，详见下文_filter_and_sort_data</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="n">Permutation</span><span class="p">,</span> <span class="n">Permutation</span><span class="o">&gt;</span> <span class="n">permutations</span><span class="p">;</span>
-
-    <span class="c1">// step 1: extract datas from _raw_chunks into segments,</span>
-    <span class="c1">// and initialize permutations.second when _init_merged_segment == false.</span>
-    <span class="n">RETURN_IF_ERROR</span><span class="p">(</span><span class="n">_build_sorting_data</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">permutations</span><span class="p">.</span><span class="n">second</span><span class="p">,</span> <span class="n">segments</span><span class="p">));</span>
-
-    <span class="c1">// step 2: filter batch-chunks as permutations.first and permutations.second when _init_merged_segment == true.</span>
-    <span class="c1">// sort part chunks in permutations.first and permutations.second, if _init_merged_segment == false means permutations.first is empty.</span>
-    <span class="c1">// 1) 如果不是第一轮排序，而且已排序数据已经达到topn，就从已排好的数据中拿到最大和最小值，</span>
-    <span class="c1">// 将待排序的数据分成三块</span>
-    <span class="c1">// BEFORE(-inf, sorted_min), IN[sorted_min, sorted_max), [sorted_max, +inf)</span>
-    <span class="c1">// 第三块直接扔掉</span>
-    <span class="c1">// 2) 如果没达到topn，只能使用sorted_min来将数据分成两块</span>
-    <span class="c1">// BEFORE(-inf, sorted_min)，IN[sorted_min, +inf)</span>
-    <span class="c1">//</span>
-    <span class="c1">// 然后分别对这两块进行排序，排序的结果分别存入 permutations的first和second</span>
-    <span class="n">RETURN_IF_ERROR</span><span class="p">(</span><span class="n">_filter_and_sort_data</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">permutations</span><span class="p">,</span> <span class="n">segments</span><span class="p">,</span> <span class="n">chunk_size</span><span class="p">));</span>
-
-    <span class="c1">// step 3:</span>
-    <span class="c1">// (1) take permutations.first as BEFORE.</span>
-    <span class="c1">// (2) take permutations.second merge-sort with _merged_segment as IN.</span>
-    <span class="c1">// the result is _merged_segment as [BEFORE, IN].</span>
-    <span class="c1">// 因为BEFORE都是比先前排序后的最小值还小的值，所以它肯定在最前面，</span>
-    <span class="c1">// 只需要把IN和先前排好的数据merge就行了</span>
-    <span class="c1">// 最终把排序并merge后的数据物化写入_merged_segment</span>
-    <span class="n">RETURN_IF_ERROR</span><span class="p">(</span><span class="n">_merge_sort_data_as_merged_segment</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">permutations</span><span class="p">,</span> <span class="n">segments</span><span class="p">));</span>
-
-    <span class="k">return</span> <span class="n">Status</span><span class="o">::</span><span class="n">OK</span><span class="p">();</span>
-<span class="p">}</span>
-</pre></td></tr></tbody></table></code></pre></div></div>
-
-<h3 id="排序内部逻辑">排序内部逻辑</h3>
-<ul>
-  <li>
-    <p>每次处理一批chunk
-sort_vertical_chunks</p>
-  </li>
-  <li>
-    <p>循环地把这些chunk中的同一列都拿出来，调用
-sort_vertical_columns
-一次处理所有chunk中的这一列</p>
-  </li>
-  <li>
-    <p>构造一个VerticalColumnSorter，使用访问者模式实现
-把这一列进行排序，结果写在permutations中（每条数据排序结果的chunk下标及行下标，最后一步才物化）</p>
-  </li>
-  <li>
-    <p>如果这次排序需要的结果数量小于总数据量则使用std::partial_sort（只要一部分），否则使用 （全量排）
-先全量排first，如果不够topn，再排second（rows_to_sort - first_size）
-if (UNLIKELY(limit &gt; 0 &amp;&amp; first_iter &lt; limit &amp;&amp; limit &lt;= last_iter))</p>
-  </li>
-</ul>
-
-<p>std::partial_sort
-此种算法适用于在大量元素中找出前N个最大的，底层使用堆排序实现</p>
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code><table class="rouge-table"><tbody><tr><td class="rouge-gutter gl"><pre class="lineno">1
-2
-3
-4
-5
-</pre></td><td class="rouge-code"><pre>partial_sort(beg,mid,end,comp)
-beg - 起始位置
-mid - 中间位置
-end - 结束位置
-comp - 自定义less-than比较运算符
-</pre></td></tr></tbody></table></code></pre></div></div>
-<ol>
-  <li>对原始容器内区间为[first, middle)的元素执行 make_heap() 操作构造一个大顶堆</li>
-  <li>然后遍历剩余区间[middle, last)中的元素，剩余区间的每个元素均与大顶堆的堆顶元素进行比较（大顶堆的堆顶元素为最大元素，该元素为第一个元素，很容易获得），若堆顶元素较大，则交换堆顶元素和遍历得到的元素值（pop_heap ），并重新调整该大顶堆以维持该堆为大顶堆（adjust_heap）</li>
-  <li>遍历结束后，[first, middle)区间内的元素便是排名在前的m个元素，再对该堆做一次堆排序 sort_heap() 便可得到最后的结果</li>
-</ol>
-
-<p><img src="/img/in-post/partial_sort.png" alt="partial_sort" /></p>
-
 
 
                 <hr style="visibility: hidden;">
                 <ul class="pager">
                     
                     <li class="previous">
-                        <a href="/2022/10/22/setup-zsh/" data-toggle="tooltip" data-placement="top" title="zsh 配置及美化">
-                        Previous<br>
-                        <span>zsh 配置及美化</span>
-                        </a>
-                    </li>
-                    
-                    
-                    <li class="next">
                         <a href="/2022/10/22/starrocks-vec-engine-basic/" data-toggle="tooltip" data-placement="top" title="Starrocks 向量化执行引擎执行流程简述">
-                        Next<br>
+                        Previous<br>
                         <span>Starrocks 向量化执行引擎执行流程简述</span>
                         </a>
                     </li>
+                    
                     
                 </ul>
                 <hr style="visibility: hidden;">
